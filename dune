@@ -1,0 +1,16 @@
+(env
+  (dev
+    (flags (:standard -warn-error -A)))
+ (release
+  (ocamlopt_flags (-O3)))
+)
+
+(executable
+ (name i3_workspaces)
+ (libraries lwt i3ipc inifiles str)
+ (preprocess (pps lwt_ppx ppx_deriving_argparse))
+)
+
+(install
+(section bin)
+(files (i3_workspaces.exe as i3_workspaces)))
