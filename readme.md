@@ -1,6 +1,3 @@
-.. -*- mode: rst -*-
-.. -*-  coding: utf-8 -*-
-
 # A workspace manager for I3 wm
 
 
@@ -9,7 +6,6 @@ setting a wallpaper to each workspace, or launch application on some
 workspaces.
 
 ## Configuration
-
 
 Create a configuration
 
