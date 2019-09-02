@@ -28,11 +28,11 @@ let change_workspace {I3ipc.Event.change; I3ipc.Event.current; _} ini = begin
 end
 
 let show_error = begin function
-  | No_IPC_socket -> Printf.eprintf "No_IPC_socket error\n%!"
+  | No_IPC_socket ->        Printf.eprintf "No_IPC_socket error\n%!"
   | Bad_magic_string str -> Printf.eprintf "Bad_magic_string %s\n%!" str
-  | Unexpected_eof -> Printf.eprintf "Unexpected_eof\n%!"
-  | Unknown_type _num -> Printf.eprintf "Unknown_type\n%!"
-  | Bad_reply str -> Printf.eprintf "Bad_reply %s\n%!" str
+  | Unexpected_eof ->       Printf.eprintf "Unexpected_eof\n%!"
+  | Unknown_type num ->    Printf.eprintf "Unknown_type : %s\n%!" (Stdint.Uint32.to_string num)
+  | Bad_reply str ->        Printf.eprintf "Bad_reply %s\n%!" str
 end
 
 let rec event_loop configuration conn = begin
