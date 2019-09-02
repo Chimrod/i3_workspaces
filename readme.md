@@ -7,7 +7,7 @@ workspaces.
 
 ## Configuration
 
-Create a configuration in `~/${XDG_CONFIG_HOME}/i3_workspaces/config` with :
+Create a configuration in `${XDG_CONFIG_HOME}/i3_workspaces/config` with :
 
 ```ini
 [global]
