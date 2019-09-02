@@ -35,4 +35,4 @@ on_init=gmpc
 
 Require [opam](http://opam.ocaml.org/)
 
-Download the project and compile it with `opam install .`
+Download the project and compile it with `opam pin https://github.com/Chimrod/i3_workspaces.git`
