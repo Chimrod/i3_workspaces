@@ -41,4 +41,6 @@ overriden in a dedicated workspace section.
 
 Require [opam](http://opam.ocaml.org/)
 
-Download the project and compile it with `opam pin https://github.com/Chimrod/i3_workspaces.git`
+Download the project and compile it with `opam pin add https://github.com/Chimrod/i3_workspaces.git`
+
+Install with `sudo make install`

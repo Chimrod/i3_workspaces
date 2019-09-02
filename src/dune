@@ -9,8 +9,6 @@
  (name i3_workspaces)
  (libraries lwt i3ipc inifiles str stdint)
  (preprocess (pps lwt_ppx ppx_deriving_argparse))
+ (public_name i3_workspaces)
 )
 
-(install
-(section bin)
-(files (i3_workspaces.exe as i3_workspaces)))

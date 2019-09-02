@@ -6,8 +6,7 @@ let change_workspace {I3ipc.Event.change; I3ipc.Event.current; _} ini = begin
 
   let workspace_opt = current in
 
-  let launch line workspace_opt = begin
-    workspace_opt
+  let launch line = begin workspace_opt
     |>>? fun workspace -> workspace.I3ipc.Reply.name
     |>>? fun name -> Configuration.load_value ini name line
     |>>? fun value -> (* Load the command to run *)
@@ -20,8 +19,8 @@ let change_workspace {I3ipc.Event.change; I3ipc.Event.current; _} ini = begin
   end in
 
   begin match change with
-  | Focus -> launch "on_focus" workspace_opt
-  | Init -> launch "on_init" workspace_opt
+  | Focus -> launch "on_focus"
+  | Init -> launch "on_init"
   | _ -> None
   end
 
