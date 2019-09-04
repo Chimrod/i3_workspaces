@@ -1,27 +1,54 @@
 open I3ipc
 
 let (|>>?) opt f = Option.bind ~f opt
+let (|>>=?) opt f = begin match opt with
+    | None -> Lwt.return_none
+    | Some v -> Lwt.return_some (f v)
+end
 
-let change_workspace {I3ipc.Event.change; I3ipc.Event.current; _} ini = begin
+let swallow conn class_name : Reply.command_outcome list option Lwt.t = begin
+  let%lwt command = Lwt_io.with_temp_file ~prefix:"i3_workspaces" (
+    fun (temp_file, channel) ->
+    let%lwt () = Lwt_io.fprintf channel {|{"swallows": [{"class": "%s"}]}|} class_name in
+    let%lwt () = Lwt_io.close channel in
+    let content = Lwt_io.lines_of_file temp_file in
+    let%lwt () = Lwt_stream.iter print_endline content in
+    let%lwt reply = (I3ipc.command conn ("append_layout " ^ temp_file)) in
+    Lwt.return reply
+  ) in
+  Lwt.return_some command
 
-  let workspace_opt = current in
+end
 
-  let launch line = begin workspace_opt
-    |>>? fun workspace -> workspace.I3ipc.Reply.name
-    |>>? fun name -> Configuration.load_value ini name line
+let change_workspace conn {I3ipc.Event.change; I3ipc.Event.current; _} ini = begin
+
+  let launch name line : Unix.process_status option Lwt.t = begin
+    let process = Configuration.load_value ini name line
     |>>? fun value -> (* Load the command to run *)
       (* Replace variables in command *)
       Configuration.get_params ini name value
       |> Option.map ~f:(fun command ->
         let process = Lwt_process.shell command in
         Lwt_process.exec process
-      )
+    )
+    in match process with
+    | None -> Lwt.return_none
+    | Some p -> Lwt.map (fun x -> Some x) p
   end in
 
-  begin match change with
-  | Focus -> launch "on_focus"
-  | Init -> launch "on_init"
-  | _ -> None
+       current
+  |>>=? fun workspace -> workspace.I3ipc.Reply.name
+  |>>=? fun name -> begin match change with
+    | Focus ->
+    launch name "on_focus"
+    | Init -> (
+      (* Is there a swallow option ? *)
+      let%lwt swallow = Configuration.load_value ini name "on_init_swallow_class"
+      |>>=? fun k -> swallow conn k
+      in
+      launch name "on_init"
+      )
+    | _ -> Lwt.return_none
   end
 
 end
@@ -48,7 +75,7 @@ let rec event_loop configuration conn = begin
 
   begin match%lwt get_event () with
   | I3ipc.Event.Workspace wks ->
-    let _result = change_workspace wks configuration in
+    let _result = change_workspace conn wks configuration in
     event_loop configuration conn
   | _ -> event_loop configuration conn
   end
