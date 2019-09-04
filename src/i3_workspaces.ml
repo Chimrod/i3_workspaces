@@ -44,7 +44,7 @@ let change_workspace conn {I3ipc.Event.change; I3ipc.Event.current; _} ini = beg
     | Init -> (
       (* Is there a swallow option ? *)
       let%lwt swallow = Configuration.load_value ini name "on_init_swallow_class"
-      |>>=? k -> swallow conn k in
+      |>>=? fun k -> swallow conn k in
       launch name "on_init" (fun c ->
         (* Do not run no-startup-id : we want the application to be launched on
            this workspace *)
