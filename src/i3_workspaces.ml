@@ -22,15 +22,12 @@ end
 
 let change_workspace conn {I3ipc.Event.change; I3ipc.Event.current; _} ini = begin
 
-  let launch name line : Unix.process_status option Lwt.t = begin
+  let launch name line f = begin
     let process = Configuration.load_value ini name line
     |>>? fun value -> (* Load the command to run *)
       (* Replace variables in command *)
       Configuration.get_params ini name value
-      |> Option.map ~f:(fun command ->
-        let process = Lwt_process.shell command in
-        Lwt_process.exec process
-    )
+      |> Option.map ~f
     in match process with
     | None -> Lwt.return_none
     | Some p -> Lwt.map (fun x -> Some x) p
@@ -40,13 +37,18 @@ let change_workspace conn {I3ipc.Event.change; I3ipc.Event.current; _} ini = beg
   |>>=? fun workspace -> workspace.I3ipc.Reply.name
   |>>=? fun name -> begin match change with
     | Focus ->
-    launch name "on_focus"
+      launch name "on_focus" (fun c ->
+        (* We exec the process with no-startup-id argument to prevent
+           notification and the clock cursor  *)
+        I3ipc.command conn ("exec --no-startup-id " ^ c))
     | Init -> (
       (* Is there a swallow option ? *)
       let%lwt swallow = Configuration.load_value ini name "on_init_swallow_class"
-      |>>=? fun k -> swallow conn k
-      in
-      launch name "on_init"
+      |>>=? k -> swallow conn k in
+      launch name "on_init" (fun c ->
+        (* Do not run no-startup-id : we want the application to be launched on
+           this workspace *)
+        I3ipc.command conn ("exec " ^ c))
       )
     | _ -> Lwt.return_none
   end

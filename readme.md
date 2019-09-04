@@ -19,19 +19,17 @@ image=~/wallpaper/1.jpg
 
 [2]
 image=~/wallpaper/2.jpg
+on_init_swallow_class=URxvt
 
 [mail]
 on_init=thunderbird
-on_init_swallow_class=Thunderbird
 
 [web]
 image=~/wallpaper/web.jpg
 on_init=firefox
-on_init_swallow_class=Firefox # Ensure firefox will be launched on this workspace
 
 [music]
 on_init=gmpc
-on_init_swallow_class=Gmpc
 ```
 
 - the `on_focus` command will be launched on workspace change.
@@ -41,8 +39,7 @@ Keys defined in `global` section will apply on any workspace, and can be
 overriden in a dedicated workspace section.
 
 The key `on_init_swallow_class` tell i3 that the window with the given class
-shall be placed on the workspace. This allow to quickly change workspace after
-creating it without seing firefox on the new workspace.
+shall be placed on the workspace. 
 
 ## Compilation
 
