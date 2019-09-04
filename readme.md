@@ -22,7 +22,7 @@ image=~/wallpaper/2.jpg
 
 [mail]
 on_init=thunderbird
-swallow_class=Thunderbird
+on_init_swallow_class=Thunderbird
 
 [web]
 image=~/wallpaper/web.jpg
@@ -31,7 +31,7 @@ on_init_swallow_class=Firefox # Ensure firefox will be launched on this workspac
 
 [music]
 on_init=gmpc
-swallow_class=Gmpc
+on_init_swallow_class=Gmpc
 ```
 
 - the `on_focus` command will be launched on workspace change.
