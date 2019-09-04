@@ -9,10 +9,7 @@ end
 let swallow conn class_name : Reply.command_outcome list option Lwt.t = begin
   let%lwt command = Lwt_io.with_temp_file ~prefix:"i3_workspaces" (
     fun (temp_file, channel) ->
-    let%lwt () = Lwt_io.fprintf channel {|{"swallows": [{"class": "%s"}]}|} class_name in
     let%lwt () = Lwt_io.close channel in
-    let content = Lwt_io.lines_of_file temp_file in
-    let%lwt () = Lwt_stream.iter print_endline content in
     let%lwt reply = (I3ipc.command conn ("append_layout " ^ temp_file)) in
     Lwt.return reply
   ) in
