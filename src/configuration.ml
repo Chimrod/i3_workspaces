@@ -16,7 +16,7 @@ let load_value conf section field = begin
   | Inifiles.Invalid_element _ ->
     load_global conf field
   | Inifiles.Invalid_section _ ->
-    Printf.printf "Unknown workspace %s\n%!" section;
+    Printf.printf "\tUnknown workspace %s\n%!" section;
     load_global conf field
 end
 

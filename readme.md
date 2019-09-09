@@ -27,6 +27,7 @@ on_init=thunderbird
 [web]
 image=~/wallpaper/web.jpg
 on_init=firefox
+on_init_swallow_class=Firefox
 
 [music]
 on_init=gmpc
@@ -38,8 +39,10 @@ on_init=gmpc
 Keys defined in `global` section will apply on any workspace, and can be
 overriden in a dedicated workspace section.
 
-The key `on_init_swallow_class` tell i3 that the window with the given class
-shall be placed on the workspace. 
+The key `on_init_swallow_class` tells i3 that the window with the given class
+shall be placed on the workspace. It create a container in the workspace,
+and i3 will not destroy it if you leave the workspace right after creating it :
+this prevent `on_init` event to be run a second time when the window is created.
 
 ## Compilation
 
