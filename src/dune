@@ -5,10 +5,10 @@
   (ocamlopt_flags (-O3)))
 )
 
-(executable
- (name i3_workspaces)
+(executables
+ (names i3_workspaces i3dot)
  (libraries lwt i3ipc inifiles str stdint)
  (preprocess (pps lwt_ppx ppx_deriving_argparse))
- (public_name i3_workspaces)
+ (public_names i3_workspaces i3dot)
 )
 

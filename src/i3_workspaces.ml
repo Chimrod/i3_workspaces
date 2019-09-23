@@ -1,22 +1,4 @@
-open I3ipc
-
-let (|>>?) opt f = Option.bind ~f opt
-let (|>>=?) opt f = begin match opt with
-    | None -> Lwt.return_none
-    | Some v -> Lwt.return_some (f v)
-end
-
-let swallow conn class_name : Reply.command_outcome list Lwt.t = begin
-
-  Lwt_io.with_temp_file ~prefix:"i3_workspaces" (
-    fun (temp_file, channel) ->
-    Printf.printf "\tSwallowing class %s\n%!" class_name;
-    let%lwt () = Lwt_io.fprintf channel {|{"swallows": [{"class": "%s"}]}|} class_name in
-    let%lwt () = Lwt_io.close channel in
-    I3ipc.command conn ("append_layout " ^ temp_file)
-  )
-
-end
+let (|>>=?) opt f = Option.bind ~f opt
 
 let log_change out = begin function
   | I3ipc.Event.Init -> Printf.fprintf out "Init"
@@ -33,60 +15,111 @@ let log_wks_name out = begin function
     end
 end
 
-let change_workspace conn {I3ipc.Event.change; I3ipc.Event.current; I3ipc.Event.old} ini = begin
-
-  let launch name line f = begin
-    let process = Configuration.load_value ini name line
-    |>>? fun value -> (* Load the command to run *)
-      (* Replace variables in command *)
-      Configuration.get_params ini name value
-      |> Option.map ~f
-    in match process with
-    | None -> Lwt.return_none
-    | Some p -> Lwt.map (fun x -> Some x) p
-  end in
+let workspace_event conn {I3ipc.Event.change; I3ipc.Event.current; _} ini : Actions.answer Lwt.t = begin
 
   let current_name_opt: string option = current
-  |>>? fun workspace -> workspace.I3ipc.Reply.name in
+  |>>=? fun workspace -> workspace.I3ipc.Reply.name in
 
-  Printf.printf "Receive event %a from %a to %a\n"
+  Printf.printf "Receive workspace event %a to %a\n"
     log_change change
-    log_wks_name old
     log_wks_name current;
 
   begin match change, current_name_opt with
   | Focus, Some name ->
-      launch name "on_focus" (fun c ->
-        (* We exec the process with no-startup-id argument to prevent
-           notification and the clock cursor  *)
-        Printf.printf "\tRunning %s\n%!" c;
-        I3ipc.command conn ("exec --no-startup-id " ^ c))
-  | Init, Some name -> (
-      (* Is there a swallow option ? *)
-      let%lwt res =
-      match Configuration.load_value ini name "on_init_swallow_class" with
-      | None -> Lwt.return_unit
-      | Some _class -> Lwt.bind (swallow conn _class) (fun _ -> Lwt.return_unit)
-      in
+    (* We exec the process with no-startup-id argument to prevent
+       notification and the clock cursor  *)
+    Configuration.load_values ini name "on_focus"
+    |> List.fold_left (Actions.launch `NoStartupId) Actions.create
+    |> Actions.apply conn
+  | Init, Some name ->
+    (* If there is a swallow option, we run it in first *)
+    let state = Configuration.load_values ini name "on_init_swallow_class"
+    |> List.fold_left (fun a b -> Actions.swallow b a) Actions.create
+    in
+    (* Do not run no-startup-id : we want the application to be launched on
+       this workspace *)
+    Configuration.load_values ini name "on_init"
+    |> List.fold_left (Actions.launch `StartupId) state
+    |> Actions.apply conn
 
-      launch name "on_init" (fun c ->
-        (* Do not run no-startup-id : we want the application to be launched on
-           this workspace *)
-        Printf.printf "Running %s\n%!" c;
-        I3ipc.command conn ("exec " ^ c))
-      )
-  | _, _ ->
-      Lwt.return_none
+  | _ -> Lwt.return Actions.empty
   end
 
 end
 
-let show_error = begin function
-  | No_IPC_socket ->        Printf.eprintf "No_IPC_socket error\n%!"
-  | Bad_magic_string str -> Printf.eprintf "Bad_magic_string %s\n%!" str
-  | Unexpected_eof ->       Printf.eprintf "Unexpected_eof\n%!"
-  | Unknown_type num ->     Printf.eprintf "Unknown_type : %s\n%!" (Stdint.Uint32.to_string num)
-  | Bad_reply str ->        Printf.eprintf "Bad_reply %s\n%!" str
+let window_event conn {I3ipc.Event.change; I3ipc.Event.container} ini : Actions.answer Lwt.t = begin
+
+  let exec_tree workspace f state  = begin
+    let open Layout in
+    begin match switch_layout workspace.I3ipc.Reply.layout with
+    | Some layout' ->
+      let fake_root = I3ipc.Reply.{workspace with layout = layout'} in
+      traverse f [fake_root, workspace] state
+    | None ->
+      (* The workspace layout is not splith nor splitv, ignoring *)
+      state
+    end
+  end in
+
+  let%lwt tree = I3ipc.get_tree conn in
+
+  (* Try to identify the actual workspace. If a new window is created, the
+     container is already registered in the tree, but in case of close event,
+     we can't rely on the container given by the event : it does not exists
+     anymore.
+  *)
+
+  let handlers w = w
+  |>>=? fun workspace -> workspace.I3ipc.Reply.name
+  |>>=? fun name -> Configuration.load_value ini name "layout"
+  |>>=? fun layout -> match layout with
+  | "binary" -> Some (Layout.binary, workspace)
+  | _ -> None
+  in
+
+  begin match change with
+  | I3ipc.Event.Close ->
+    let current_workspace = Tree.get_focused_workspace tree in
+    begin match handlers current_workspace with
+    | None -> Lwt.return Actions.empty
+    | Some ((_, c), workspace) ->
+      let state = exec_tree workspace c Actions.create in
+      Actions.apply conn state
+    end
+  | I3ipc.Event.New ->
+    let container_workspace = Tree.get_workspace tree container in
+    begin match handlers container_workspace with
+    | None -> Lwt.return Actions.empty
+    | Some ((n, _), workspace) ->
+      let state = exec_tree workspace n Actions.create in
+      Actions.apply conn state
+    end
+  | I3ipc.Event.Move ->
+    (* Move is like a Close event followed by a New one *)
+    let container_workspace = Tree.get_workspace tree container
+    and current_workspace = Tree.get_focused_workspace tree in
+    (* Clean the current workspace *)
+    let state = begin match handlers current_workspace with
+    | Some ((_, c), workspace) -> exec_tree workspace c Actions.create
+    | None -> Actions.create
+    end in
+    (* Insert the container in the new one *)
+    begin match handlers container_workspace with
+    | None -> Lwt.return Actions.empty
+    | Some ((n, _), workspace) ->
+      let state = exec_tree workspace n state in
+      Actions.apply conn state
+    end
+  | _ -> Lwt.return Actions.empty
+  end
+end
+
+let pp_error format = begin function
+| I3ipc.No_IPC_socket -> Format.fprintf format "No_IPC_socket"
+| I3ipc.Bad_magic_string str -> Format.fprintf format "Bad_magic_string %s" str
+| I3ipc.Unexpected_eof -> Format.fprintf format "Unexpected_eof"
+| I3ipc.Unknown_type _t -> Format.fprintf format "Unknown_type"
+| I3ipc.Bad_reply str -> Format.fprintf format "Bad_reply %s" str
 end
 
 let rec event_loop configuration conn = begin
@@ -94,14 +127,17 @@ let rec event_loop configuration conn = begin
   begin match%lwt I3ipc.next_event conn with
   | exception I3ipc.Protocol_error err ->
     (* On error, log to stderr then loop *)
-    Format.eprintf "%a\n%!" I3ipc.pp_protocol_error err;
-    event_loop configuration conn
+    Format.eprintf "%a\n%!" pp_error err;
+    (event_loop[@tailcall]) configuration conn
   | I3ipc.Event.Workspace wks ->
-    let%lwt _result = change_workspace conn wks configuration in
-    event_loop configuration conn
+    let%lwt _result = workspace_event conn wks configuration in
+    (event_loop[@tailcall]) configuration conn
+  | I3ipc.Event.Window w ->
+    let%lwt _result = window_event conn w configuration in
+    (event_loop[@tailcall]) configuration conn
   | _ ->
     (* This should not happen, we did not subscribe to other events *)
-    event_loop configuration conn
+    (event_loop[@tailcall]) configuration conn
   end
 
 end
@@ -120,7 +156,7 @@ let main =
   | Some config ->
     let%lwt conn = I3ipc.connect () in
 
-    let%lwt reply = I3ipc.subscribe conn [Workspace] in
+    let%lwt reply = I3ipc.subscribe conn [Workspace ; Window] in
     if reply.success then
       event_loop config conn
     else

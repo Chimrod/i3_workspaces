@@ -1,9 +1,21 @@
 # A workspace manager for I3 wm
 
-
 `i3_workspaces` allow you to configure your workspace easily. I use it for
 setting a wallpaper to each workspace, or launch application on some
 workspaces.
+
+### Problem with `assign`
+
+The [assign](https://i3wm.org/docs/userguide.html#assign_workspace) keyword in
+the i3 configuration allow you to set a dedicated workspace for an application.
+This solution as flaws, like moving ALL the windows on this workspace, even if
+the parent has been moved to another one workspace.
+
+We are answering the problem in a different way : instead of creating the
+window, then moving it to a workspace, you run the application when the
+workspace is created. You can then forget all the placement rules, and you can
+move the application anywhere, without being annoyed by pop-up window created
+on another workspace.
 
 ## Configuration
 
