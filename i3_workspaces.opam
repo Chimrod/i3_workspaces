@@ -9,7 +9,7 @@ depends: [
   "dune"
   "ocaml"
   "lwt"
-  "i3ipc"
+  "i3ipc" {>= "0.3"}
   "lwt_ppx"
   "ppx_deriving_argparse"
   "ocaml-inifiles"

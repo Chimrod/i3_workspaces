@@ -91,21 +91,17 @@ end
 
 let rec event_loop configuration conn = begin
 
-  (** Wait for the next Event
-   If an error occur, log it, and wait again
-   *)
-  let rec get_event () = begin
-    try%lwt I3ipc.next_event conn with
-    | I3ipc.Protocol_error err ->
-      show_error err;
-      get_event ()
-  end in
-
-  begin match%lwt get_event () with
+  begin match%lwt I3ipc.next_event conn with
+  | exception I3ipc.Protocol_error err ->
+    (* On error, log to stderr then loop *)
+    Format.eprintf "%a\n%!" I3ipc.pp_protocol_error err;
+    event_loop configuration conn
   | I3ipc.Event.Workspace wks ->
     let%lwt _result = change_workspace conn wks configuration in
     event_loop configuration conn
-  | _ -> event_loop configuration conn
+  | _ ->
+    (* This should not happen, we did not subscribe to other events *)
+    event_loop configuration conn
   end
 
 end
@@ -120,8 +116,7 @@ let main =
   );
   (* Load the ini file *)
   begin match Configuration.load cfg.config with
-  | None ->
-      exit 1
+  | None -> exit 1
   | Some config ->
     let%lwt conn = I3ipc.connect () in
 
