@@ -1,5 +1,7 @@
 # A workspace manager for I3 wm
 
+## Goals
+
 `i3_workspaces` allow you to configure your workspace easily. I use it for
 setting a wallpaper to each workspace, or launch application on some
 workspaces.
@@ -56,7 +58,23 @@ shall be placed on the workspace. It create a container in the workspace,
 and i3 will not destroy it if you leave the workspace right after creating it :
 this prevent `on_init` event to be run a second time when the window is created.
 
+### Layout
+
+You can also let the application manage for you the window placement.
+i3_workspaces provide a binary layout which automaticaly divide each container
+following a binary space partionning :
+
+![Layout example](layout.gif)
+
+```ini
+[global]
+layout=binary
+```
+
 ## Compilation
+
+The application is coded in OCaml, a functionnal language, and uses
+[i3ipc](https://github.com/Armael/ocaml-i3ipc/) to communicate with the i3.
 
 Require [opam](http://opam.ocaml.org/)
 
