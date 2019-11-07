@@ -1,0 +1,10 @@
+(library
+  (name common)
+  (libraries 
+    configuration
+    i3ipc 
+    lwt 
+    )
+   (preprocess (pps lwt_ppx ppx_deriving_argparse ppx_deriving.enum))
+  
+  )

@@ -1,5 +1,7 @@
 open I3ipc.Reply
 
+include DefaultHandler
+
 type traversal = Actions.t -> node -> node -> (Actions.t * node list)
 
 let switch_layout = begin function
@@ -94,4 +96,39 @@ let rec traverse (f:traversal) nodes state: Actions.t = begin match nodes with
   (traverse[@tailcall]) f (List.append tl childs') state
 end
 
-let binary = binary_tree, reduce_tree
+let (|>>=?) opt f = Option.bind ~f opt
+
+(** Check if we should manage this workspace *)
+let handlers ini workspace = workspace.I3ipc.Reply.name
+|>>=? fun name -> Configuration.load_value ini name "layout"
+|>>=? fun layout -> match layout with
+| "binary" -> Some true
+| _ -> None
+
+let window_create ini node state = begin
+  match handlers ini node with
+  | None -> state
+  | Some _ ->
+    begin match switch_layout node.I3ipc.Reply.layout with
+    | Some layout' ->
+      let fake_root = I3ipc.Reply.{node with layout = layout'} in
+      traverse binary_tree [fake_root, node] state
+    | None ->
+      (* The workspace layout is not splith nor splitv, ignoring *)
+      state
+    end
+end
+
+let window_close ini node state = begin
+  match handlers ini node with
+  | None -> state
+  | Some _ ->
+    begin match switch_layout node.I3ipc.Reply.layout with
+    | Some layout' ->
+      let fake_root = I3ipc.Reply.{node with layout = layout'} in
+      traverse reduce_tree [fake_root, node] state
+    | None ->
+      (* The workspace layout is not splith nor splitv, ignoring *)
+      state
+    end
+end

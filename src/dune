@@ -1,14 +1,25 @@
 (env
   (dev
-    (flags (:standard -warn-error -A)))
+    (flags (:standard -warn-error -A -cclib -lxcb))
+    )
  (release
   (ocamlopt_flags (-O3)))
 )
 
 (executables
  (names i3_workspaces i3dot)
- (libraries lwt i3ipc inifiles str stdint)
+ (libraries 
+    configuration
+    common
+    handlers
+    lwt 
+ )
  (preprocess (pps lwt_ppx ppx_deriving_argparse))
  (public_names i3_workspaces i3dot)
 )
 
+
+(rule
+ (targets bindings_types.ml)
+ (deps ../stubgen/bindings_stubs_gen.exe)
+ (action (with-stdout-to %{targets} (run %{deps} -ml))))

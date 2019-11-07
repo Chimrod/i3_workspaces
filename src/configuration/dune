@@ -1,0 +1,9 @@
+(library
+  (name configuration)
+  (libraries 
+    inifiles
+    str
+    )
+   (preprocess (pps lwt_ppx ppx_deriving_argparse ppx_deriving.enum))
+  
+  )
