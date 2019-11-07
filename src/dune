@@ -12,14 +12,9 @@
     configuration
     common
     handlers
+    xcb
     lwt 
  )
  (preprocess (pps lwt_ppx ppx_deriving_argparse))
  (public_names i3_workspaces i3dot)
 )
-
-
-(rule
- (targets bindings_types.ml)
- (deps ../stubgen/bindings_stubs_gen.exe)
- (action (with-stdout-to %{targets} (run %{deps} -ml))))

@@ -1,3 +1,4 @@
+open Common
 open I3ipc.Reply
 
 include DefaultHandler
