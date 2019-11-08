@@ -1,0 +1,4 @@
+(library
+ (name bindings)
+ (synopsis "Ctypes bindings that describe the lib FFI")
+ (libraries ctypes.stubs ctypes lwt))

@@ -1,0 +1,18 @@
+(library
+  (name xcb)
+  (libraries 
+    lwt
+    lwt.unix
+    ctypes 
+    ctypes.foreign 
+    unix-type-representations
+    bindings
+    )
+   (preprocess (pps lwt_ppx ppx_deriving_argparse ppx_deriving.enum))
+  
+  )
+
+(rule
+ (targets bindings_types.ml)
+ (deps stubgen/bindings_stubs_gen.exe)
+ (action (with-stdout-to %{targets} (run %{deps} -ml))))

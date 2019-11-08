@@ -7,13 +7,14 @@
 )
 
 (executables
- (names i3_workspaces i3dot)
+ (names i3_workspaces i3dot x)
  (libraries 
     configuration
     common
     handlers
+    xcb
     lwt 
  )
  (preprocess (pps lwt_ppx ppx_deriving_argparse))
- (public_names i3_workspaces i3dot)
+ (public_names i3_workspaces i3dot x)
 )
