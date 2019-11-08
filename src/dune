@@ -12,7 +12,6 @@
     configuration
     common
     handlers
-    xcb
     lwt 
  )
  (preprocess (pps lwt_ppx ppx_deriving_argparse))
