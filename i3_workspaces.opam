@@ -1,5 +1,5 @@
 opam-version: "2.0"
-version: "0.1"
+version: "0.2"
 synopsis: "Workspace manager for i3 WM"
 name: "i3_workspaces"
 authors: ["Sébastien Dailly"]

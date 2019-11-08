@@ -1,4 +1,5 @@
-include DefaultHandler
+include Common
+include DefaultHandler.M
 
 let workspace_focus ini _event name state = begin
   Configuration.load_values ini name "on_focus"

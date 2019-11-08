@@ -1,18 +1,8 @@
-module type HANDLER = sig
-
-  val workspace_focus: Configuration.t -> I3ipc.Reply.node -> string -> Actions.t -> Actions.t
-
-  val workspace_init: Configuration.t -> I3ipc.Reply.node -> string -> Actions.t -> Actions.t
-
-  val window_create: Configuration.t -> I3ipc.Reply.node -> Actions.t -> Actions.t
-
-  val window_close: Configuration.t -> I3ipc.Reply.node -> Actions.t -> Actions.t
-end
-
+open Common
 
 let modules = ref []
 
-let register_handler (m : (module HANDLER)) = begin
+let register_handler (m : (module DefaultHandler.HANDLER)) = begin
   modules := m :: (!modules)
 end
 let () = register_handler (module BinaryLayoutHandler)
@@ -23,11 +13,11 @@ let get_handlers () = ! modules
 
 let workspace_event conn {I3ipc.Event.change; I3ipc.Event.current; _} ini = begin
 
-  let call_workspace_focus workspace name state (module H:HANDLER) = begin
+  let call_workspace_focus workspace name state (module H:DefaultHandler.HANDLER) = begin
     H.workspace_focus ini workspace name state
   end
 
-  and call_workspace_init workspace name state (module H:HANDLER) = begin
+  and call_workspace_init workspace name state (module H:DefaultHandler.HANDLER) = begin
     H.workspace_init ini workspace name state
   end
 
@@ -38,6 +28,7 @@ let workspace_event conn {I3ipc.Event.change; I3ipc.Event.current; _} ini = begi
   | Some workspace ->
     begin match workspace.I3ipc.Reply.name with
     | None -> Lwt.return Actions.empty
+    (* Ensure we have a workspace and a name *)
     | Some name ->
       begin match change with
       | Focus ->
@@ -58,16 +49,18 @@ let window_event conn {I3ipc.Event.change; I3ipc.Event.container} ini = begin
 
   let%lwt tree = I3ipc.get_tree conn in
 
-  let call_window_close workspace state (module H:HANDLER) = begin
+  let call_window_close workspace state (module H:DefaultHandler.HANDLER) = begin
     H.window_close ini workspace state
   end
 
-  and call_window_create workspace state (module H:HANDLER) = begin
+  and call_window_create workspace state (module H:DefaultHandler.HANDLER) = begin
     H.window_create ini workspace state
   end in
 
   begin match change with
   | I3ipc.Event.Close ->
+    (* On close event, we try to find the focused workspace, as the container given
+       by i3 does not exists anymore in the tree *)
     let current_workspace = Common.Tree.get_focused_workspace tree in
     begin match current_workspace with
     | None -> Lwt.return Actions.empty
