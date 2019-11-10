@@ -13,6 +13,7 @@ depends: [
   "lwt_ppx"
   "ppx_deriving_argparse"
   "ocaml-inifiles"
+  "ctypes"
 ]
 dev-repo: "git+https://github.com/chimrod/i3_workspaces.git"
 build: [
