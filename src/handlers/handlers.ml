@@ -61,8 +61,8 @@ let window_event conn {I3ipc.Event.change; I3ipc.Event.container} ini = begin
   | I3ipc.Event.Close ->
     (* On close event, we try to find the focused workspace, as the container given
        by i3 does not exists anymore in the tree *)
-    let current_workspace = Common.Tree.get_focused_workspace tree in
-    begin match current_workspace with
+    let focused_workspace = Common.Tree.get_focused_workspace tree in
+    begin match focused_workspace with
     | None -> Lwt.return Actions.empty
     | Some workspace ->
          get_handlers ()
@@ -70,8 +70,8 @@ let window_event conn {I3ipc.Event.change; I3ipc.Event.container} ini = begin
       |> Actions.apply conn
     end
   | I3ipc.Event.New ->
-    let focused_workspace = Common.Tree.get_workspace tree container in
-    begin match focused_workspace with
+    let workspace = Common.Tree.get_workspace tree container in
+    begin match workspace with
     | None -> Lwt.return Actions.empty
     | Some workspace ->
          get_handlers ()
@@ -79,20 +79,20 @@ let window_event conn {I3ipc.Event.change; I3ipc.Event.container} ini = begin
       |> Actions.apply conn
     end
   | I3ipc.Event.Move ->
+    let focused_workspace = Common.Tree.get_focused_workspace tree in
     (* Move is like a Close event followed by a New one *)
-    let current_workspace = Common.Tree.get_focused_workspace tree in
-    let focused_workspace = Common.Tree.get_workspace tree container in
-    let state = begin match current_workspace with
+    let state = begin match focused_workspace with
     | None -> Actions.create
     | Some workspace ->
          get_handlers ()
       |> List.fold_left (call_window_close workspace) Actions.create
     end in
-    let state' = begin match focused_workspace with
+    let current_workspace = Common.Tree.get_workspace tree container in
+    let state' = begin match current_workspace with
     | None -> state
     | Some workspace ->
          get_handlers ()
-      |> List.fold_left (call_window_create workspace) Actions.create
+      |> List.fold_left (call_window_create workspace) state
     end in
     Actions.apply conn state'
   | _ ->  Lwt.return Actions.empty
