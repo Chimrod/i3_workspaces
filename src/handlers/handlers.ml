@@ -49,6 +49,7 @@ let window_event conn {I3ipc.Event.change; I3ipc.Event.container} ini = begin
 
   let%lwt tree = I3ipc.get_tree conn in
 
+
   let call_window_close workspace state (module H:DefaultHandler.HANDLER) = begin
     H.window_close ini workspace state
   end
@@ -79,20 +80,21 @@ let window_event conn {I3ipc.Event.change; I3ipc.Event.container} ini = begin
       |> Actions.apply conn
     end
   | I3ipc.Event.Move ->
-    let focused_workspace = Common.Tree.get_focused_workspace tree in
     (* Move is like a Close event followed by a New one *)
+
+    let handlers = get_handlers () in
+
+    let focused_workspace = Common.Tree.get_focused_workspace tree in
     let state = begin match focused_workspace with
     | None -> Actions.create
     | Some workspace ->
-         get_handlers ()
-      |> List.fold_left (call_window_close workspace) Actions.create
+      List.fold_left (call_window_close workspace) Actions.create handlers
     end in
     let current_workspace = Common.Tree.get_workspace tree container in
     let state' = begin match current_workspace with
     | None -> state
     | Some workspace ->
-         get_handlers ()
-      |> List.fold_left (call_window_create workspace) state
+      List.fold_left (call_window_create workspace) state handlers
     end in
     Actions.apply conn state'
   | _ ->  Lwt.return Actions.empty
