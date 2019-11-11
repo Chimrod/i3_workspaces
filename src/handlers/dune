@@ -3,6 +3,7 @@
   (libraries 
     configuration
     common
+    xcb
     i3ipc 
     lwt 
     )
