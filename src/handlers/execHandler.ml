@@ -1,5 +1,7 @@
 include Common
-include DefaultHandler.M
+include DefaultHandler
+
+type t = Configuration.t
 
 let workspace_focus ini ~workspace:_ name state = begin
   Configuration.load_values ini name "on_focus"

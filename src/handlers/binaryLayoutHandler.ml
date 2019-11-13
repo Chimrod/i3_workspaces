@@ -1,7 +1,9 @@
 open Common
 open I3ipc.Reply
 
-include DefaultHandler.M
+include DefaultHandler
+
+type t = Configuration.t
 
 type traversal = Actions.t -> node -> node -> (Actions.t * node list)
 

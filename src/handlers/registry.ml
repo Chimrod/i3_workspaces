@@ -1,25 +1,51 @@
 open Common
 
+module type HANDLER = sig
+
+  type t
+
+  val init: Configuration.t -> t option
+
+  (** Function to call on workspace change *)
+  val workspace_focus: t -> workspace:I3ipc.Reply.node -> string -> Common.Actions.t -> Common.Actions.t
+
+  val workspace_init: t -> workspace:I3ipc.Reply.node -> string -> Common.Actions.t -> Common.Actions.t
+
+  val window_create: t -> workspace:I3ipc.Reply.node -> container:I3ipc.Reply.node -> Common.Actions.t -> Common.Actions.t
+
+  val window_close: t -> workspace:I3ipc.Reply.node -> container:I3ipc.Reply.node -> Common.Actions.t -> Common.Actions.t
+end
+
+(** Existancial type which associate the module with the given type *)
+type handler =
+  H : 'a * (module HANDLER with type t = 'a) -> handler
+
 let modules = ref []
 
-let register_handler (m : (module DefaultHandler.HANDLER)) = begin
-  modules := m :: (!modules)
+let add ini (module M : HANDLER) = begin
+  match M.init ini with
+  | None -> ()
+  | Some init -> modules := H (init, (module M)) :: (!modules)
 end
-let () = register_handler (module BinaryLayoutHandler)
-let () = register_handler (module LoggerHandler)
-let () = register_handler (module ExecHandler)
-let () = register_handler (module Persistence)
 
 let get_handlers () = ! modules
 
-let workspace_event conn {I3ipc.Event.change; I3ipc.Event.current; _} ini = begin
+let workspace_event conn {I3ipc.Event.change; I3ipc.Event.current; _} = begin
 
-  let call_workspace_focus workspace name state (module H:DefaultHandler.HANDLER) = begin
-    H.workspace_focus ini ~workspace name state
+  let call_workspace_focus workspace name state handler = begin
+    (* let the ocaml magic operate !
+
+       the type handler is defined with a constraint on the module. The
+       compiler know that `init` match H.t and can be used inside the call. We
+       just have to decompose the tuple :
+    *)
+    let H (init, (module H)) = handler in
+    H.workspace_focus init ~workspace name state
   end
 
-  and call_workspace_init workspace name state (module H:DefaultHandler.HANDLER) = begin
-    H.workspace_init ini ~workspace name state
+  and call_workspace_init workspace name state handler = begin
+    let H (init, (module H)) = handler in
+    H.workspace_init init ~workspace name state
   end
 
   in
@@ -46,17 +72,19 @@ let workspace_event conn {I3ipc.Event.change; I3ipc.Event.current; _} ini = begi
   end
 end
 
-let window_event conn {I3ipc.Event.change; I3ipc.Event.container} ini = begin
+let window_event conn {I3ipc.Event.change; I3ipc.Event.container} = begin
 
   let%lwt tree = I3ipc.get_tree conn in
 
 
-  let call_window_close workspace container state (module H:DefaultHandler.HANDLER) = begin
-    H.window_close ini ~workspace ~container state
+  let call_window_close workspace container state handler = begin
+    let H (init, (module H)) = handler in
+    H.window_close init ~workspace ~container state
   end
 
-  and call_window_create workspace container state (module H:DefaultHandler.HANDLER) = begin
-    H.window_create ini ~workspace ~container state
+  and call_window_create workspace container state handler = begin
+    let H (init, (module H)) = handler in
+    H.window_create init ~workspace ~container state
   end in
 
   begin match change with

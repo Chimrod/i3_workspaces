@@ -1,5 +1,8 @@
 open Common
-include DefaultHandler.M
+
+include DefaultHandler
+
+type t = Configuration.t * Xcb.connexion
 
 let create_window connexion screen width height = begin
   Xcb.create_window
@@ -19,7 +22,13 @@ let create_window connexion screen width height = begin
     ]
 end
 
-let window_close ini ~workspace ~container state =
+let init conf = begin
+  match Xcb.connect () with
+  |  Some connexion -> Some (conf, connexion)
+  |  None -> None
+end
+
+let window_close (ini, connexion) ~workspace ~container state =
   begin match workspace.I3ipc.Reply.nodes with
   | _::_ ->  state
   | [] -> state

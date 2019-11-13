@@ -1,4 +1,6 @@
-include DefaultHandler.M
+include DefaultHandler
+
+type t = Configuration.t
 
 let workspace_focus _ ~workspace:_ name state = begin
   Printf.printf "Receive workspace event Focus on %s\n"

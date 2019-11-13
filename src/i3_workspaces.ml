@@ -16,10 +16,10 @@ let rec event_loop configuration conn = begin
     Format.eprintf "%a\n%!" pp_error err;
     (event_loop[@tailcall]) configuration conn
   | I3ipc.Event.Workspace wks ->
-    let%lwt _result = Handlers.workspace_event conn wks configuration in
+    let%lwt _result = Handlers.Registry.workspace_event conn wks in
     (event_loop[@tailcall]) configuration conn
   | I3ipc.Event.Window w ->
-    let%lwt _result = Handlers.window_event conn w configuration in
+    let%lwt _result = Handlers.Registry.window_event conn w in
     (event_loop[@tailcall]) configuration conn
   | _ ->
     (* This should not happen, we did not subscribe to other events *)
@@ -40,6 +40,12 @@ let main =
   begin match Configuration.load cfg.config with
   | None -> exit 1
   | Some config ->
+
+    Handlers.Registry.add config (module Handlers.LoggerHandler);
+    Handlers.Registry.add config (module Handlers.BinaryLayoutHandler);
+    Handlers.Registry.add config (module Handlers.ExecHandler);
+    Handlers.Registry.add config (module Handlers.Persistence);
+
     let%lwt conn = I3ipc.connect () in
 
     let%lwt reply = I3ipc.subscribe conn [Workspace ; Window] in
