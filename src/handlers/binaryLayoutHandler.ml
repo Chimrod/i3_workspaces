@@ -110,28 +110,30 @@ let handlers ini workspace = workspace.I3ipc.Reply.name
 
 let window_create ini ~workspace ~container:_ state = begin
   match handlers ini workspace with
-  | None -> state
+  | None -> Lwt.return state
   | Some _ ->
     begin match switch_layout workspace.I3ipc.Reply.layout with
     | Some layout' ->
       let fake_root = I3ipc.Reply.{workspace with layout = layout'} in
       traverse binary_tree [fake_root, workspace] state
+      |> Lwt.return
     | None ->
       (* The workspace layout is not splith nor splitv, ignoring *)
-      state
+      Lwt.return state
     end
 end
 
 let window_close ini ~workspace ~container:_ state = begin
   match handlers ini workspace with
-  | None -> state
+  | None -> Lwt.return state
   | Some _ ->
     begin match switch_layout workspace.I3ipc.Reply.layout with
     | Some layout' ->
       let fake_root = I3ipc.Reply.{workspace with layout = layout'} in
       traverse reduce_tree [fake_root, workspace] state
+      |> Lwt.return
     | None ->
       (* The workspace layout is not splith nor splitv, ignoring *)
-      state
+      Lwt.return state
     end
 end

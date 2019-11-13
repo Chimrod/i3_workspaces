@@ -6,6 +6,7 @@ type t = Configuration.t
 let workspace_focus ini ~workspace:_ name state = begin
   Configuration.load_values ini name "on_focus"
   |> List.fold_left (Actions.launch `NoStartupId) state
+  |> Lwt.return
 end
 
 let workspace_init ini ~workspace:_ name state = begin
@@ -17,4 +18,5 @@ let workspace_init ini ~workspace:_ name state = begin
      this workspace *)
      Configuration.load_values ini name "on_init"
   |> List.fold_left (Actions.launch `StartupId) state
+  |> Lwt.return
 end

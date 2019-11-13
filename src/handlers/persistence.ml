@@ -30,7 +30,7 @@ end
 
 let window_close (ini, connexion) ~workspace ~container state =
   begin match workspace.I3ipc.Reply.nodes with
-  | _::_ ->  state
-  | [] -> state
+  | _::_ ->  Lwt.return state
+  | [] -> Lwt.return state
 
   end

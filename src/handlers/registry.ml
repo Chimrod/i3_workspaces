@@ -7,13 +7,13 @@ module type HANDLER = sig
   val init: Configuration.t -> t option
 
   (** Function to call on workspace change *)
-  val workspace_focus: t -> workspace:I3ipc.Reply.node -> string -> Common.Actions.t -> Common.Actions.t
+  val workspace_focus: t -> workspace:I3ipc.Reply.node -> string -> Common.Actions.t -> Common.Actions.t Lwt.t
 
-  val workspace_init: t -> workspace:I3ipc.Reply.node -> string -> Common.Actions.t -> Common.Actions.t
+  val workspace_init: t -> workspace:I3ipc.Reply.node -> string -> Common.Actions.t -> Common.Actions.t Lwt.t
 
-  val window_create: t -> workspace:I3ipc.Reply.node -> container:I3ipc.Reply.node -> Common.Actions.t -> Common.Actions.t
+  val window_create: t -> workspace:I3ipc.Reply.node -> container:I3ipc.Reply.node -> Common.Actions.t -> Common.Actions.t Lwt.t
 
-  val window_close: t -> workspace:I3ipc.Reply.node -> container:I3ipc.Reply.node -> Common.Actions.t -> Common.Actions.t
+  val window_close: t -> workspace:I3ipc.Reply.node -> container:I3ipc.Reply.node -> Common.Actions.t -> Common.Actions.t Lwt.t
 end
 
 (** Existancial type which associate the module with the given type *)
@@ -59,13 +59,15 @@ let workspace_event conn {I3ipc.Event.change; I3ipc.Event.current; _} = begin
     | Some name ->
       begin match change with
       | Focus ->
-           get_handlers ()
-        |> List.fold_left (call_workspace_focus workspace name) Actions.create
-        |> Actions.apply conn
+        let%lwt state = get_handlers ()
+        |> Lwt_list.fold_left_s (call_workspace_focus workspace name) Actions.create
+        in
+        Actions.apply conn state
       | Init ->
-           get_handlers ()
-        |> List.fold_left (call_workspace_init workspace name) Actions.create
-        |> Actions.apply conn
+        let%lwt state = get_handlers ()
+        |> Lwt_list.fold_left_s (call_workspace_init workspace name) Actions.create
+        in
+        Actions.apply conn state
       | _ -> Lwt.return Actions.empty
       end
     end
@@ -95,18 +97,20 @@ let window_event conn {I3ipc.Event.change; I3ipc.Event.container} = begin
     begin match focused_workspace with
     | None -> Lwt.return Actions.empty
     | Some workspace ->
-         get_handlers ()
-      |> List.fold_left (call_window_close workspace container) Actions.create
-      |> Actions.apply conn
+      let%lwt state = get_handlers ()
+      |> Lwt_list.fold_left_s (call_window_close workspace container) Actions.create
+      in
+      Actions.apply conn state
     end
   | I3ipc.Event.New ->
     let workspace = Common.Tree.get_workspace tree container in
     begin match workspace with
     | None -> Lwt.return Actions.empty
     | Some workspace ->
-         get_handlers ()
-      |> List.fold_left (call_window_create workspace container) Actions.create
-      |> Actions.apply conn
+      let%lwt state = get_handlers ()
+      |> Lwt_list.fold_left_s (call_window_create workspace container) Actions.create
+      in
+      Actions.apply conn state
     end
   | I3ipc.Event.Move ->
     (* Move is like a Close event followed by a New one *)
@@ -114,16 +118,16 @@ let window_event conn {I3ipc.Event.change; I3ipc.Event.container} = begin
     let handlers = get_handlers () in
 
     let focused_workspace = Common.Tree.get_focused_workspace tree in
-    let state = begin match focused_workspace with
-    | None -> Actions.create
-    | Some workspace ->
-      List.fold_left (call_window_close workspace container) Actions.create handlers
-    end in
     let current_workspace = Common.Tree.get_workspace tree container in
-    let state' = begin match current_workspace with
-    | None -> state
+    let%lwt state = begin match focused_workspace with
+    | None -> Lwt.return Actions.create
     | Some workspace ->
-      List.fold_left (call_window_create workspace container) state handlers
+      Lwt_list.fold_left_s (call_window_close workspace container) Actions.create handlers
+    end in
+    let%lwt state' = begin match current_workspace with
+    | None -> Lwt.return state
+    | Some workspace ->
+      Lwt_list.fold_left_s (call_window_create workspace container) state handlers
     end in
     Actions.apply conn state'
   | _ ->  Lwt.return Actions.empty
