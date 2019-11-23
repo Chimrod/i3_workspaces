@@ -123,7 +123,7 @@ let window_create ini ~workspace ~container:_ state = begin
     end
 end
 
-let window_close ini ~workspace ~container:_ state = begin
+let window_close ini _ ~workspace ~container:_ state = begin
   match handlers ini workspace with
   | None -> Lwt.return state
   | Some _ ->

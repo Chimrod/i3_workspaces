@@ -34,11 +34,20 @@ let traverse f (root:t) = begin
   traverse [root]
 end
 
-let get_workspace (t:t) (container:t) = begin
+let get_workspace (t:t) (container:t) : t option = begin
   traverse (fun c -> c.I3ipc.Reply.id = container.I3ipc.Reply.id) t
 end
 
 let get_focused_workspace (t:t) = begin
   traverse (fun c -> c.I3ipc.Reply.focused) t
+end
+
+let rec has_container node = begin match node.I3ipc.Reply.nodes with
+  | [] -> false
+  | hd::tl ->
+    begin match hd.nodetype with
+    | Con -> true
+    | _ -> List.exists has_container tl
+    end
 end
 

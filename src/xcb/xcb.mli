@@ -14,7 +14,7 @@ type visualid_t
 
 type id
 
-val int_of_id: id -> int
+val string_of_id: id -> string
 
 (* Screen definition *)
 type screen = {
@@ -33,7 +33,7 @@ val get_screens: connexion -> screen list
 
 val create_window:
   connexion ->
-  depth:int ->
+  depth:int option ->
   parent:id ->
   x:int ->
   y:int -> 
@@ -41,7 +41,7 @@ val create_window:
   height:int ->
   border:int -> 
   int ->
-  visual:visualid_t->
+  visual:visualid_t option->
   Xcb_types.xcb_cw list ->
   id option cookie
 

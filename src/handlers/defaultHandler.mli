@@ -25,5 +25,5 @@ val window_create: 'a -> workspace:I3ipc.Reply.node -> container:I3ipc.Reply.nod
 
 (** Function to call on window closing
   The given node is the focused workspace *)
-val window_close: 'a -> workspace:I3ipc.Reply.node -> container:I3ipc.Reply.node -> Common.Actions.t -> Common.Actions.t Lwt.t
+val window_close: 'a -> [`Move | `Close] -> workspace:I3ipc.Reply.node -> container:I3ipc.Reply.node -> Common.Actions.t -> Common.Actions.t Lwt.t
 

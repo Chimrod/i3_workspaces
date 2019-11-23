@@ -15,9 +15,9 @@ end
 
 include XcbHelper
 
-type id = int
+type id = Unsigned.uint32
 
-let int_of_id i = i
+let string_of_id = Unsigned.UInt32.to_string
 
 (** The connection to the server.
 
@@ -102,6 +102,7 @@ let _create_window =
     @-> uint32_v   (* value mask *)
     @-> ptr void   (* value list *)
     @-> (returning void_cookie_t))
+
 
 let foreign_destroy_window =
   foreign "xcb_destroy_window_checked" (c_connexion
@@ -289,10 +290,21 @@ let create_window (conn, _) ~depth ~parent ~x ~y ~width ~height ~border c_class 
     |> CArray.start
     |> to_voidp
 
+
+  and depth' = begin match depth with
+  | None -> copy_from_parent
+  | Some x -> x
+  end
+
+  and visual' = begin match visual with
+  | None -> copy_from_parent
+  | Some x -> x
+  end
+
   in
   let c =
     _create_window conn
-      depth
+      depth'
       wid
       parent
       x
@@ -301,7 +313,7 @@ let create_window (conn, _) ~depth ~parent ~x ~y ~width ~height ~border c_class 
       height
       border
       c_class
-      visual
+      visual'
       mask
       values'
     in fun () -> request_check wid conn c

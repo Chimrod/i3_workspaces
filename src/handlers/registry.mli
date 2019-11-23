@@ -17,7 +17,7 @@ module type HANDLER = sig
 
   val window_create: t -> workspace:I3ipc.Reply.node -> container:I3ipc.Reply.node -> Common.Actions.t -> Common.Actions.t Lwt.t
 
-  val window_close: t -> workspace:I3ipc.Reply.node -> container:I3ipc.Reply.node -> Common.Actions.t -> Common.Actions.t Lwt.t
+  val window_close: t -> [`Move | `Close] -> workspace:I3ipc.Reply.node -> container:I3ipc.Reply.node -> Common.Actions.t -> Common.Actions.t Lwt.t
 end
 
 (** Register a new handler *)

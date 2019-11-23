@@ -20,16 +20,17 @@ module Types = functor (S : Cstubs.Types.TYPE) -> struct
   type c_connexion = unit Ctypes.ptr
   let c_connexion: c_connexion typ = ptr void
 
-  type visualid_t = Unsigned.uint32
-  let visualid_t: visualid_t typ = uint32_t
+  type visualid_t = int
+  let visualid_t: visualid_t typ = uint32_v
 
   type xcb_atom_t = Unsigned.uint32
   let xcb_atom_t: xcb_atom_t typ = uint32_t
 
-  let id: int typ = uint32_v
-
+  let id = uint32_t
   type xcb_colormap_t = int
   let xcb_colormap_t: xcb_colormap_t typ = uint32_v
+
+  let copy_from_parent = (constant "XCB_COPY_FROM_PARENT"         int)
 
   type screen_t
    let screen: screen_t structure typ = structure "xcb_screen_t"

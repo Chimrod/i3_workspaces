@@ -13,7 +13,7 @@ module type HANDLER = sig
 
   val window_create: t -> workspace:I3ipc.Reply.node -> container:I3ipc.Reply.node -> Common.Actions.t -> Common.Actions.t Lwt.t
 
-  val window_close: t -> workspace:I3ipc.Reply.node -> container:I3ipc.Reply.node -> Common.Actions.t -> Common.Actions.t Lwt.t
+  val window_close: t -> [`Move | `Close] -> workspace:I3ipc.Reply.node -> container:I3ipc.Reply.node -> Common.Actions.t -> Common.Actions.t Lwt.t
 end
 
 (** Existancial type which associate the module with the given type *)
@@ -79,9 +79,9 @@ let window_event conn {I3ipc.Event.change; I3ipc.Event.container} = begin
   let%lwt tree = I3ipc.get_tree conn in
 
 
-  let call_window_close workspace container state handler = begin
+  let call_window_close workspace container ev state handler = begin
     let H (init, (module H)) = handler in
-    H.window_close init ~workspace ~container state
+    H.window_close init ev ~workspace ~container state
   end
 
   and call_window_create workspace container state handler = begin
@@ -98,7 +98,7 @@ let window_event conn {I3ipc.Event.change; I3ipc.Event.container} = begin
     | None -> Lwt.return Actions.empty
     | Some workspace ->
       let%lwt state = get_handlers ()
-      |> Lwt_list.fold_left_s (call_window_close workspace container) Actions.create
+      |> Lwt_list.fold_left_s (call_window_close workspace container `Close) Actions.create
       in
       Actions.apply conn state
     end
@@ -122,7 +122,7 @@ let window_event conn {I3ipc.Event.change; I3ipc.Event.container} = begin
     let%lwt state = begin match focused_workspace with
     | None -> Lwt.return Actions.create
     | Some workspace ->
-      Lwt_list.fold_left_s (call_window_close workspace container) Actions.create handlers
+      Lwt_list.fold_left_s (call_window_close workspace container `Move) Actions.create handlers
     end in
     let%lwt state' = begin match current_workspace with
     | None -> Lwt.return state
