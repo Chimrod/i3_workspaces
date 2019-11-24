@@ -7,7 +7,7 @@
 )
 
 (executables
- (names i3_workspaces i3dot x)
+ (names i3_workspaces i3dot)
  (libraries 
     configuration
     common
