@@ -1,9 +1,9 @@
 (env
   (dev
-    (flags (:standard -warn-error -A -cclib -lxcb))
-    )
+    (flags (:standard -warn-error -A -cclib -lxcb)))
  (release
-  (ocamlopt_flags (-O3)))
+  (ocamlopt_flags (-O3))
+  (flags (:standard -cclib -lxcb)))
 )
 
 (executables
