@@ -31,8 +31,8 @@ end
 let launch exec t command = begin
   C (
     begin match exec with
-    | `NoStartupId -> ("exec --no-startup-id \"" ^ command ^ "\"")
-    | _ -> ("exec \"" ^ command ^ "\"")
+      | `NoStartupId -> ("exec --no-startup-id \"" ^ command ^ "\"")
+      | _ -> ("exec \"" ^ command ^ "\"")
     end
   )::t
 end
@@ -46,9 +46,9 @@ let split (container:node) new_layout t = begin
   let con_id = _focus container in
   C (
     begin match new_layout with
-    | SplitV -> (con_id ^ "split vertical")
-    | SplitH -> (con_id ^ "split horizontal")
-    | _ -> "nop"
+      | SplitV -> (con_id ^ "split vertical")
+      | SplitH -> (con_id ^ "split horizontal")
+      | _ -> "nop"
     end
   )::t
 end
@@ -58,9 +58,9 @@ let layout (container:node) new_layout t = begin
   let con_id = _focus container in
   C (
     begin match new_layout with
-    | SplitV -> (con_id ^ "layout splitv")
-    | SplitH -> (con_id ^ "layout splith")
-    | _ -> "nop"
+      | SplitV -> (con_id ^ "layout splitv")
+      | SplitH -> (con_id ^ "layout splith")
+      | _ -> "nop"
     end
   )::t
 end
@@ -81,15 +81,15 @@ let apply conn t = begin
   end in
 
   let f (buffer, posts) = begin function
-  | C c -> Lwt.return (add_elem buffer c, posts)
-  | W f -> let%lwt c, p = f () in
-    Lwt.return (add_elem buffer c, p::posts)
+    | C c -> Lwt.return (add_elem buffer c, posts)
+    | W f -> let%lwt c, p = f () in
+      Lwt.return (add_elem buffer c, p::posts)
   end in
 
   let%lwt command, posts = Lwt_list.fold_left_s f (b, []) t in
   let command' = Buffer.contents command in
   print_endline command';
   let%lwt result = I3ipc.command conn command' in
-  let%lwt posts = Lwt_list.iter_p (fun f -> f ()) posts in
+  let%lwt _posts = Lwt_list.iter_p (fun f -> f ()) posts in
   Lwt.return result
 end

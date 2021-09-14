@@ -10,4 +10,7 @@ docs:
 install:
 	dune install --prefix "/usr" -p i3_workspaces
 
+deps:
+	opam install . --deps-only
+
 .PHONY: all clean
