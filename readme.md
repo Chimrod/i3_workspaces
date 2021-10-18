@@ -71,6 +71,12 @@ following a binary space partionning :
 layout=binary
 ```
 
+The three layout are managed :
+
+- Vertical
+- Horizontal 
+- Binary
+
 ## Compilation
 
 The application is coded in OCaml, a functionnal language, and uses
