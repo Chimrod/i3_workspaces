@@ -14,6 +14,6 @@
     handlers
     lwt 
  )
- (preprocess (pps lwt_ppx ppx_deriving_argparse))
+ (preprocess (pps lwt_ppx))
  (public_names i3_workspaces i3dot)
 )

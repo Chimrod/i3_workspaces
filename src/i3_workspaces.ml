@@ -30,7 +30,7 @@ end
 
 let main =
 
-  let cfg, _ = Args.argparse (Args.default_conf ()) "i3_workspaces" Sys.argv in
+  let cfg = Args.default_conf () in
 
   if not (Sys.file_exists cfg.config) then (
     Printf.eprintf "Configuration file %s not found\nExciting\n%!" cfg.config;

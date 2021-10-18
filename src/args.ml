@@ -1,9 +1,12 @@
 type t = {
-  config : string [@short "-c"]
+  config : string
   (** Specify the path to the configuration file.
 
   By default, search for ${XDG_CONFIG_HOME}/i3_workspaces/config*)
-} [@@deriving argparse]
+}
+
+let usage =
+ "i3_workspaces"
 
 let check_file env path = begin
   try
@@ -18,12 +21,18 @@ end
 
 (** Try to look for the default environment *)
 let default_conf () = begin
-  match check_file "XDG_CONFIG_HOME" "i3_workspaces/" with
-  | Some f -> {config = f}
-  | None -> begin
+ let configuration = ref "" in
+  begin match check_file "XDG_CONFIG_HOME" "i3_workspaces/" with
+  | Some f -> configuration := f
+  | None ->
     match check_file "HOME" ".config/i3_workspaces/" with
-    | Some f -> {config = f}
-    | None -> {config = ""}
-  end
-end
+    | Some f -> configuration := f
+    | None -> ()
+  end;
 
+ let speclist =
+  [ ("-c", Arg.Set_string configuration, "Configuration file") ] in
+ Arg.parse speclist (fun _ -> ()) usage;
+ {config = !configuration }
+
+end
