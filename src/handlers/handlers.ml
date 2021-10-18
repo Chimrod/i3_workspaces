@@ -8,6 +8,7 @@ end
 let () = register_handler (module BinaryLayoutHandler)
 let () = register_handler (module LoggerHandler)
 let () = register_handler (module ExecHandler)
+let () = register_handler (module SimpleLayoutHandler)
 
 let get_handlers () = ! modules
 
